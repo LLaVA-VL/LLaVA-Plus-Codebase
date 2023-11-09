@@ -14,6 +14,16 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+# ======================================
+# Notes by Shilong Liu:
+# The scripts is adopted from the llava repo. original path: https://github.com/haotian-liu/LLaVA/blob/main/llava/train/train.py
+# checkout the git history for the modification details.
+# with two modifications:
+#  1. support multiple image folders, separated by ','
+#  2. support multiple dataset files, separated by ','
+#  None that there might be multiple images with the same name in different folders, in this case, the first one will be used, which may not be the desired one!
+# ======================================
+
 import os
 import copy
 from dataclasses import dataclass, field
@@ -23,6 +33,7 @@ import pathlib
 from typing import Dict, Optional, Sequence, List
 
 import torch
+from torch.utils.data import ConcatDataset
 
 import transformers
 
@@ -32,7 +43,7 @@ from llava.train.llava_trainer import LLaVATrainer
 
 from llava import conversation as conversation_lib
 from llava.model import *
-from llava.mm_utils import tokenizer_image_token
+from llava.mm_utils import reorganize_source_for_tool_use_batch, tokenizer_image_token
 
 from PIL import Image
 
@@ -587,6 +598,10 @@ def preprocess(
     3. Tokenize the concatenated conversation;
     4. Make a deepcopy as the target. Mask human words with IGNORE_INDEX.
     """
+    
+    # reorganize sources by merging thoughts, actions, value into value, and add prefixs to value.
+    sources = reorganize_source_for_tool_use_batch(sources)
+    
     if conversation_lib.default_conversation.sep_style == conversation_lib.SeparatorStyle.PLAIN:
         return preprocess_plain(sources, tokenizer)
     if conversation_lib.default_conversation.sep_style == conversation_lib.SeparatorStyle.LLAMA_2:
@@ -657,6 +672,22 @@ class LazySupervisedDataset(Dataset):
             length_list.append(cur_len)
         return length_list
 
+    def load_image(self, image_file, image_folder):
+        # load image from image_folder. support multiple folders
+        # if multiple folders are provided, we will search the image in the order of the folders
+        # the multiple folders should be separated by ','
+        # **Warning**: if multiple folders has the same image name, the first one will be used, which may not be the desired one!
+        if ',' not in image_folder:
+            return Image.open(os.path.join(image_folder, image_file)).convert('RGB')
+        
+        dir_list = image_folder.split(',')
+        for dirname in dir_list:
+            img_path = os.path.join(dirname.strip(), image_file)
+            if os.path.exists(img_path):
+                return Image.open(img_path).convert('RGB')
+
+        raise ValueError("Unknow_file: {}".format(image_file))
+
     def __getitem__(self, i) -> Dict[str, torch.Tensor]:
         sources = self.list_data_dict[i]
         if isinstance(i, int):
@@ -666,7 +697,8 @@ class LazySupervisedDataset(Dataset):
             image_file = self.list_data_dict[i]['image']
             image_folder = self.data_args.image_folder
             processor = self.data_args.image_processor
-            image = Image.open(os.path.join(image_folder, image_file)).convert('RGB')
+            # image = Image.open(os.path.join(image_folder, image_file)).convert('RGB')
+            image = self.load_image(image_file, image_folder)
             if self.data_args.image_aspect_ratio == 'pad':
                 def expand2square(pil_img, background_color):
                     width, height = pil_img.size
@@ -741,16 +773,33 @@ class DataCollatorForSupervisedDataset(object):
         return batch
 
 
+def build_dataset(data_args, tokenizer, dataset_cls):
+    train_dataset = dataset_cls(tokenizer=tokenizer,
+                                data_path=data_args.data_path,
+                                data_args=data_args)
+    return train_dataset
+
+
 def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer,
                                 data_args) -> Dict:
     """Make dataset and collator for supervised fine-tuning."""
-    train_dataset = LazySupervisedDataset(tokenizer=tokenizer,
-                                data_path=data_args.data_path,
-                                data_args=data_args)
-    data_collator = DataCollatorForSupervisedDataset(tokenizer=tokenizer)
-    return dict(train_dataset=train_dataset,
-                eval_dataset=None,
-                data_collator=data_collator)
+    dataset_cls = LazySupervisedDataset
+
+
+    #  concat data files
+    data_path = data_args.data_path
+    data_path_list = [i.strip() for i in data_path.split(',')]
+    data_path_list = [x for x in data_path_list if x != ""]
+
+    data_set_list = []
+    for data_name in data_path_list:
+        assert os.path.exists(data_name), f"{data_name} does not exist"
+        new_data_args = copy.deepcopy(data_args)
+        new_data_args.data_path = data_name
+        train_dataset_i = build_dataset(new_data_args, tokenizer, dataset_cls)
+        data_set_list.append(train_dataset_i)
+    train_dataset = ConcatDataset(data_set_list)
+    print(f"train_dataset size: {len(train_dataset)}")
 
 
 def train():
