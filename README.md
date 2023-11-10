@@ -144,11 +144,10 @@ Our base model Vicuna v1.5, which is an instruction-tuned chatbot, will be downl
 
 ### Stage 1: Pretrain (feature alignment)
 
-Training the projector following the [guide](https://github.com/haotian-liu/LLaVA/tree/main#pretrain-feature-alignment)
+Download [pre-trained projector](https://github.com/haotian-liu/LLaVA/blob/main/docs/MODEL_ZOO.md#projector-weights) directly as we did.
 
-or 
+Or you may train the projector following the [guideline in LLaVA](https://github.com/haotian-liu/LLaVA/tree/main#pretrain-feature-alignment).
 
-Download [pre-trained projector](https://github.com/haotian-liu/LLaVA/blob/main/docs/MODEL_ZOO.md#projector-weights) directly.
 
 
 ### Stage 2: Tool Augmented Visual Instruction Tuning
@@ -170,13 +169,14 @@ Training script with DeepSpeed ZeRO-2: [`training_llava_plus_v0_7b.sh`](scripts/
 
 <details>
 <summary>If you are do not have enough GPU memory:</summary>
-
 - Use LoRA. See LLaVA repo for more details.
-- Replace `zero3.json` with `zero3_offload.json` which offloads some parameters to CPU RAM. This slows down the training speed.
-
-If you are interested in finetuning LLaVA(LLaVA-Plus) model to your own task/data, please check out [`Finetune_Custom_Data.md`](https://github.com/haotian-liu/LLaVA/blob/main/docs/Finetune_Custom_Data.md)。
+- Replace `zero2.json` with `zero3.json` or `zero3_offload.json`.
 </details>
 
+<details>
+<summary>If you are interested in finetuning LLaVA(LLaVA-Plus) model to your own task/data:</summary>
+please check out [`Finetune_Custom_Data.md`](https://github.com/haotian-liu/LLaVA/blob/main/docs/Finetune_Custom_Data.md)。
+</details>
 <details>
 <summary>Some examplanations of options:</summary>
 
