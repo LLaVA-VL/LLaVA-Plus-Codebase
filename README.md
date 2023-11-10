@@ -75,8 +75,6 @@ To run our demo, you have four steps.
 python -m llava.serve.controller --host 0.0.0.0 --port 20001
 ```
 
-
-
 #### 2. Launch a model worker
 
 This is the actual *worker* that performs the inference on the GPU.  Each worker is responsible for a single model specified in `--model-path`.
