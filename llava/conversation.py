@@ -445,12 +445,28 @@ class Conversation:
             sep2=self.sep2,
             version=self.version)
 
-    def dict(self):
+    def dict(self, force_str=False):
+        def remove_pil(x, force_str):
+            if not force_str:
+                return x
+            
+            if isinstance(x, Image.Image):
+                return b64_encode(x)
+            
+            if isinstance(x, list):
+                return [remove_pil(y, force_str) for y in x]
+            if isinstance(x, tuple):
+                return [remove_pil(y, force_str) for y in x]
+            if isinstance(x, dict):
+                return {k: remove_pil(v, force_str) for k, v in x.items()}
+            
+            return x
+            
         if len(self.get_images()) > 0:
             return {
                 "system": self.system,
                 "roles": self.roles,
-                "messages": [[x, y[0] if type(y) is tuple else y] for x, y in self.messages],
+                "messages": [[x, remove_pil(y[0], force_str=force_str) if type(y) is tuple else y] for x, y in self.messages],
                 "offset": self.offset,
                 "sep": self.sep,
                 "sep2": self.sep2,
@@ -458,7 +474,7 @@ class Conversation:
         return {
             "system": self.system,
             "roles": self.roles,
-            "messages": self.messages,
+            "messages": remove_pil(self.messages, force_str=force_str),
             "offset": self.offset,
             "sep": self.sep,
             "sep2": self.sep2,

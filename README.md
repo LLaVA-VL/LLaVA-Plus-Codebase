@@ -5,6 +5,8 @@
 
 [[Project Page](https://llava-vl.github.io/llava-plus)] [[Arxiv]()]  [[Demo](https://llavaplus.ngrok.io/)]  [[Data](https://huggingface.co/datasets/LLaVA-VL/llava-plus-data)] [[Model Zoo]()] 
 
+***Note: Some parts of the code are still under preparations. Keep Tuned!*
+
 
 ## Release
 - [11/11] 🔥 We released **LLaVA-Plus: Large Language and Vision Assistants that Plug and Learn to Use Skills**. Enable LMM to use tools for general vision tasks! Checkout the [paper]() and [demo](https://llavaplus.ngrok.io/).

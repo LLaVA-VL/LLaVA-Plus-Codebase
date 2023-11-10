@@ -1,10 +1,4 @@
-# ================
-# Edited from the original file: gradio_web_server.py in llava. url: https://github.com/haotian-liu/LLaVA/blob/main/llava/serve/gradio_web_server.py
-# Support tool usage.
-# Edited by Shilong Liu, 2023/11/09
-# ================
-
-
+from gradio.helpers import Examples
 import argparse
 import base64
 from collections import defaultdict
@@ -55,7 +49,9 @@ class ImageMask(gr.components.Image):
         # super().__init__(source="upload", tool="boxes", type='pil', interactive=True, **kwargs)
 
     def preprocess(self, x):
-        # a hack to avioid the missing of masks
+        # import ipdb; ipdb.set_trace()
+
+        # a hack to get the mask
         if isinstance(x, str):
             im = processing_utils.decode_base64_to_image(x)
             w, h = im.size
@@ -71,7 +67,10 @@ class ImageMask(gr.components.Image):
             }
 
         res = super().preprocess(x)
-
+        # arr -> PIL
+        # res['image'] = Image.fromarray(res['image'])
+        # if os.environ.get('IPDB_SHILONG_DEBUG', None) == 'INFO':
+        #     import ipdb; ipdb.set_trace()
         return res
 
 
@@ -148,6 +147,11 @@ priority = {
 
 R = partial(round, ndigits=2)
 
+def b64_encode(img):
+    buffered = BytesIO()
+    img.save(buffered, format="JPEG")
+    img_b64_str = base64.b64encode(buffered.getvalue()).decode()
+    return img_b64_str
 
 def get_worker_addr(controller_addr, worker_name):
     # get grounding dino addr
@@ -270,13 +274,13 @@ def regenerate(state, image_process_mode, with_debug_parameter_from_state, reque
     if type(prev_human_msg[1]) in (tuple, list):
         prev_human_msg[1] = (*prev_human_msg[1][:2], image_process_mode)
     state.skip_next = False
-    return (state, state.to_gradio_chatbot(with_debug_parameter=with_debug_parameter_from_state), "", None) + (disable_btn,) * 5
+    return (state, state.to_gradio_chatbot(with_debug_parameter=with_debug_parameter_from_state), "", None, None) + (disable_btn,) * 5
 
 
 def clear_history(with_debug_parameter_from_state, request: gr.Request):
     logger.info(f"clear_history. ip: {request.client.host}")
     state = default_conversation.copy()
-    return (state, state.to_gradio_chatbot(with_debug_parameter=with_debug_parameter_from_state), "", None) + (disable_btn,) * 5
+    return (state, state.to_gradio_chatbot(with_debug_parameter=with_debug_parameter_from_state), "", None, None) + (disable_btn,) * 5
 
 
 def change_debug_state(state, with_debug_parameter_from_state, request: gr.Request):
@@ -294,7 +298,7 @@ def change_debug_state(state, with_debug_parameter_from_state, request: gr.Reque
     return (state, state.to_gradio_chatbot(with_debug_parameter=with_debug_parameter_from_state), "", None) + (debug_btn_update, state_update)
 
 
-def add_text(state, text, image_dict, image_process_mode, with_debug_parameter_from_state, request: gr.Request):
+def add_text(state, text, image_dict, ref_image_dict, image_process_mode, with_debug_parameter_from_state, request: gr.Request):
     # dict_keys(['image', 'mask'])
     if image_dict is not None:
         image = image_dict['image']
@@ -328,11 +332,19 @@ def add_text(state, text, image_dict, image_process_mode, with_debug_parameter_f
             if bounding_box is not None:
                 text_input_new = text[0] + f"\nInput box: {bounding_box}"
                 text = (text_input_new, text[1], text[2], text[3])
+                
+        if ref_image_dict is not None:
+            # text = (text[0], text[1], text[2], text[3], {
+            #     'ref_image': ref_image_dict['image'],
+            #     'ref_mask': ref_image_dict['mask']
+            # })
+            state.reference_image = b64_encode(ref_image_dict['image'])
+            state.reference_mask = b64_encode(ref_image_dict['mask'])
 
     state.append_message(state.roles[0], text)
     state.append_message(state.roles[1], None)
     state.skip_next = False
-    return (state, state.to_gradio_chatbot(with_debug_parameter=with_debug_parameter_from_state), "", None) + (disable_btn,) * 6
+    return (state, state.to_gradio_chatbot(with_debug_parameter=with_debug_parameter_from_state), "", None, None) + (disable_btn,) * 6
 
 
 def http_bot(state, model_selector, temperature, top_p, max_new_tokens, with_debug_parameter_from_state, request: gr.Request):
@@ -375,10 +387,27 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, with_deb
             template_name = "vicuna_v1"
         print("template_name: ", template_name)
 
+        # # hack:
+        # # template_name = "multimodal_tools"
+        # # import ipdb; ipdb.set_trace()
+        # # image_name = [hashlib.md5(image.tobytes()).hexdigest() for image in state.get_images(return_pil=True)][0]
+
         new_state = conv_templates[template_name].copy()
+
+        # if len(new_state.roles) == 2:
+        #     new_state.roles = tuple(list(new_state.roles) + ["system"])
+        # new_state.append_message(new_state.roles[2], f"receive an image with name `{image_name}.jpg`")
+
         new_state.append_message(new_state.roles[0], state.messages[-2][1])
         new_state.append_message(new_state.roles[1], None)
+        
+        # for reference image
+        new_state.reference_image = getattr(state, 'reference_image', None)
+        new_state.reference_mask = getattr(state, 'reference_mask', None)
+        
+        # update
         state = new_state
+        
         print("Messages：", state.messages)
 
     # Query worker address
@@ -509,6 +538,13 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, with_deb
                 api_paras['mask'] = getattr(state, 'image_seg', None)
             api_paras['mode'] = api_name
             api_name = 'controlnet'
+        if api_name == 'seem':
+            reference_image = getattr(state, 'reference_image', None)
+            reference_mask = getattr(state, 'reference_mask', None)
+            api_paras['refimg'] = reference_image
+            api_paras['refmask'] = reference_mask
+            # extract ref image and mask
+            
 
         # import ipdb; ipdb.set_trace()
         tool_worker_addr = get_worker_addr(controller_url, api_name)
@@ -684,6 +720,9 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, with_deb
     finish_tstamp = time.time()
     logger.info(f"{output}")
 
+    # models = get_model_list()
+
+    # FIXME: disabled temporarily for image generation.
     with open(get_conv_log_filename(), "a") as fout:
         data = {
             "tstamp": round(finish_tstamp, 4),
@@ -691,7 +730,7 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, with_deb
             "model": model_name,
             "start": round(start_tstamp, 4),
             "finish": round(start_tstamp, 4),
-            "state": state.dict(),
+            "state": state.dict(force_str=True),
             "images": all_image_hash,
             "ip": request.client.host,
         }
@@ -701,7 +740,7 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, with_deb
 title_markdown = ("""
 # 🌋 LLaVA-Plus: Learning to Use Tools For Creating Multimodal Agents
 ## **L**arge **L**anguage **a**nd **V**ision **A**ssistants that **P**lug and **L**earn to **U**se **S**kills
-[[Project Page]](https://llava-vl.github.io/llava-plus) [[Paper]]() [[Code]](https://github.com/LLaVA-VL/LLaVA-Plus-Codebase) [[Model]]()
+[[Project Page]](https://llava-vl.github.io/llava-plus) [[Paper]](https://arxiv.org/abs/2311.05437) [[Code]](https://github.com/LLaVA-VL/LLaVA-Plus-Codebase) [[Model]]()
 """)
 
 tos_markdown = ("""
@@ -738,9 +777,7 @@ def build_demo(embed_mode):
                         show_label=False,
                         container=False)
 
-                # imagebox = gr.Image(type="pil")
                 imagebox = ImageMask()
-                # image_visilize_type =
 
                 cur_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -791,32 +828,61 @@ def build_demo(embed_mode):
                 )
 
         with gr.Row():
-            text_box = gr.Textbox(
-                show_label=False, visible=False, container=False, scale=1)
-            gr.Examples(examples=[
-                ["Detection", f"{cur_dir}/examples/frisbee.jpg",
-                    "Detect the person and frisbee in the image."],
-                ["Detection", f"{cur_dir}/examples/wranch_box.png",
-                 "My bike is broken. I want to use a wrench to fix it. Can you show me the location of wrench and how to use it?"],
-                ["Segmentation", f"{cur_dir}/examples/mask_twitter.png",
-                 "segment birds in the image, then tell how many birds in it"],
-                ["Segmentation", f"{cur_dir}/examples/cat_comp.jpeg",
-                 "Please detect and segment the cat and computer from the image"],
-                ["Searching", f"{cur_dir}/examples/mooncake.png",
-                 "Describe the food in the image? search on the internet"],
-                ["Searching", f"{cur_dir}/examples/Judas.png",
-                 "what's the image? search on the internet"],
-                ["Editing", f"{cur_dir}/examples/calendar.png",
-                    "make the image like autumn. then generate some attractive texts for Instagram posts"],
-                ["Editing", f"{cur_dir}/examples/paris.png",
-                    "i want to post a message on Instagram. add some firework to the image, and write an attractive post for my ins."],
-                ["Generation", None, "generate a view of the city skyline of downtown Seattle in a sketch style and generate an Instagram post"],
-                ["Generation", None, "generate a view of the city skyline of Shenzhen in a future and technique style and generate a red book post"],
-                ["Conversation", f"{cur_dir}/examples/extreme_ironing.jpg",
-                 "What is unusual about this image?"],
-                ["Conversation", f"{cur_dir}/examples/waterview.jpg",
-                 "What are the things I should be cautious about when I visit here?"],
-            ], inputs=[text_box, imagebox, textbox])
+            with gr.Column():
+                gr.Examples(examples=[
+                    [f"{cur_dir}/examples/frisbee.jpg",
+                        "Detect the person and frisbee in the image."],
+                    [f"{cur_dir}/examples/wranch_box.png",
+                        "My bike is broken. I want to use a wrench to fix it. Can you show me the location of wrench and how to use it?"],
+                ], inputs=[imagebox, textbox], label="Detection Examples: ")
+                gr.Examples(examples=[
+                    [f"{cur_dir}/examples/mask_twitter.png",
+                        "segment birds in the image, then tell how many birds in it"],
+                    [f"{cur_dir}/examples/cat_comp.jpeg",
+                        "Please detect and segment the cat and computer from the image"],
+                ], inputs=[imagebox, textbox], label="Segmentation Examples: ")
+                gr.Examples(examples=[
+                    [f"{cur_dir}/examples/tbs.webp",
+                        "can you segment with the given box?"],
+                ], inputs=[imagebox, textbox], label="Interactive Segmentation (Please draw a sketch to cover the full object): ")
+                gr.Examples(examples=[
+                    [f"{cur_dir}/examples/tower.png",
+                        "can you segment with multi-granularity?"],
+                ], inputs=[imagebox, textbox], label="Multi-granularity Segmentation (Please draw a sketch as an input point): ")
+                gr.Examples(examples=[
+                    [f"{cur_dir}/examples/road.png",
+                     f"{cur_dir}/examples/road_ref2.webp",
+                        "can you segment refer to the reference image? then describe the image"],
+                ], inputs=[imagebox, ref_image_box, textbox], label="Reference image segmentation (Please draw a sketch at the reference box):")
+                
+                
+            with gr.Column():
+                gr.Examples(examples=[
+                    [f"{cur_dir}/examples/mooncake.png",
+                    "Describe the food in the image? search on the internet"],
+                    [f"{cur_dir}/examples/Judas.png",
+                    "what's the image? search on the internet"],
+                ], inputs=[imagebox, textbox], label="Searching Examples: ")
+                gr.Examples(examples=[
+                    [f"{cur_dir}/examples/calendar.png",
+                        "make the image like autumn. then generate some attractive texts for Instagram posts"],
+                    [f"{cur_dir}/examples/paris.png",
+                        "i want to post a message on Instagram. add some firework to the image, and write an attractive post for my ins."],
+                ], inputs=[imagebox, textbox], label="Editing Examples: ")
+                
+                gr.Examples(examples=[
+                    ["generate a view of the city skyline of downtown Seattle in a sketch style and generate an Instagram post"],
+                    ["generate a view of the city skyline of Shenzhen in a future and technique style and generate a red book post"],
+                ], inputs=[textbox], label="Generation Examples: ")
+                gr.Examples(examples=[
+                    [f"{cur_dir}/examples/extreme_ironing.jpg",
+                    "What is unusual about this image?"],
+                    [f"{cur_dir}/examples/waterview.jpg",
+                    "What are the things I should be cautious about when I visit here?"],
+                ], inputs=[imagebox, textbox], label="Conversation Examples: ")
+
+
+
 
         if not embed_mode:
             gr.Markdown(tos_markdown)
@@ -833,17 +899,17 @@ def build_demo(embed_mode):
         flag_btn.click(flag_last_response,
                        [state, model_selector], [textbox, upvote_btn, downvote_btn, flag_btn])
         regenerate_btn.click(regenerate, [state, image_process_mode, with_debug_parameter_state],
-                             [state, chatbot, textbox, imagebox] + btn_list).then(
+                             [state, chatbot, textbox, imagebox, ref_image_box] + btn_list).then(
             http_bot, [state, model_selector, temperature, top_p,
                        max_output_tokens, with_debug_parameter_state],
             [state, chatbot] + btn_list + [debug_btn])
         clear_btn.click(clear_history, [with_debug_parameter_state], [
-                        state, chatbot, textbox, imagebox] + btn_list)
+                        state, chatbot, textbox, imagebox, ref_image_box] + btn_list)
 
-        textbox.submit(add_text, [state, textbox, imagebox, image_process_mode, with_debug_parameter_state], [state, chatbot, textbox, imagebox] + btn_list + [debug_btn]
+        textbox.submit(add_text, [state, textbox, imagebox, ref_image_box, image_process_mode, with_debug_parameter_state], [state, chatbot, textbox, imagebox, ref_image_box] + btn_list + [debug_btn]
                        ).then(http_bot, [state, model_selector, temperature, top_p, max_output_tokens, with_debug_parameter_state],
                               [state, chatbot] + btn_list + [debug_btn])
-        submit_btn.click(add_text, [state, textbox, imagebox, image_process_mode, with_debug_parameter_state], [state, chatbot, textbox, imagebox] + btn_list + [debug_btn]
+        submit_btn.click(add_text, [state, textbox, imagebox, ref_image_box, image_process_mode, with_debug_parameter_state], [state, chatbot, textbox, imagebox, ref_image_box] + btn_list + [debug_btn]
                          ).then(http_bot, [state, model_selector, temperature, top_p, max_output_tokens, with_debug_parameter_state],
                                 [state, chatbot] + btn_list + [debug_btn])
         debug_btn.click(change_debug_state, [state, with_debug_parameter_state], [
