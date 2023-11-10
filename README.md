@@ -5,7 +5,7 @@
 
 [[Project Page](https://llava-vl.github.io/llava-plus)] [[Arxiv](https://arxiv.org/abs/2311.05437)]  [[Demo](https://llavaplus.ngrok.io/)]  [[Data](https://huggingface.co/datasets/LLaVA-VL/llava-plus-data)] [[Model Zoo]()] 
 
-**Note: Some parts of the code are still under preparations. Keep Tuned!**
+**Note: Some sections of the code are currently being prepared and updated. Please stay tuned.**
 
 
 ## Release
@@ -20,7 +20,7 @@
 ## Contents
 - [Install](#install)
 - [LLaVA-Plus Weights](#llava-plus-weights)
-- [Demo](#Demo)
+- [Demo](#demo)
 - [Model Zoo](docs/llava-plus/modelzoo.md)
 - [Dataset](docs/llava-plus/dataset.md)
 - [Train](#train)
@@ -57,6 +57,8 @@ pip install flash-attn --no-build-isolation
 Please check out our [Model Zoo](https://github.com/haotian-liu/LLaVA/blob/main/docs/MODEL_ZOO.md) for all public LLaVA-Plus checkpoints, and the instructions of how to use the weights.
 
 ## Demo
+
+- [Demo: https://llavaplus.ngrok.io/](https://llavaplus.ngrok.io/)
 
 ### Demo Architecture
 
@@ -195,18 +197,18 @@ See [LLaVA's Instruction](https://github.com/haotian-liu/LLaVA/tree/main#evaluat
 If you find LLaVA useful for your research and applications, please cite using this BibTeX:
 ```bibtex
 
-@misc{liu2023llavaplus,
-    title={LLaVA-Plus: Learning to Use Tools for Creating Multimodal Agents},
-    author={Shilong Liu and Hao Cheng and Haotian Liu and Hao Zhang and Feng Li and Tianhe Ren and Xueyan Zou and Jianwei Yang and Hang Su and Jun Zhu and Lei Zhang and Jianfeng Gao and Chunyuan Li},
-    year={2023},
-    booktitle={arXiv}
+@article{liu2023llavaplus,
+  title={LLaVA-Plus: Learning to Use Tools for Creating Multimodal Agents},
+  author={Liu, Shilong and Cheng, Hao and Liu, Haotian and Zhang, Hao and Li, Feng and Ren, Tianhe and Zou, Xueyan and Yang, Jianwei and Su, Hang and Zhu, Jun and Zhang, Lei and Gao, Jianfeng and Li, Chunyuan},
+  journal={arXiv:2311.05437},
+  year={2023}
 }
 
 @misc{liu2023llava,
       title={Visual Instruction Tuning}, 
       author={Liu, Haotian and Li, Chunyuan and Wu, Qingyang and Lee, Yong Jae},
       publisher={arXiv:2304.08485},
-      year={2023},
+      year={2023}
 }
 ```
 
