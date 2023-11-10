@@ -3,7 +3,7 @@
 
 **Learning to Use Tools For Creating Multimodal Agents.**
 
-[[Project Page](https://llava-vl.github.io/llava-plus)] [[Arxiv]()]  [[Demo](https://llavaplus.ngrok.io/)]  [[Data](https://huggingface.co/datasets/LLaVA-VL/llava-plus-data)] [[Model Zoo]()] 
+[[Project Page](https://llava-vl.github.io/llava-plus)] [[Arxiv](https://arxiv.org/abs/2311.05437)]  [[Demo](https://llavaplus.ngrok.io/)]  [[Data](https://huggingface.co/datasets/LLaVA-VL/llava-plus-data)] [[Model Zoo]()] 
 
 ***Note: Some parts of the code are still under preparations. Keep Tuned!*
 
