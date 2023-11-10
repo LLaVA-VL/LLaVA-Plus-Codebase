@@ -58,90 +58,97 @@ Please check out our [Model Zoo](https://github.com/haotian-liu/LLaVA/blob/main/
 
 ## Demo
 
-To run our demo, you need to prepare LLaVA checkpoints locally.  Please follow the instructions [here](#LLaVA-Plus-Weights) to download the checkpoints.
+### Demo Architecture
 
-### Gradio Web UI
+![llava-plus-arch](images/llava-plus-arch.png)
 
-To launch a Gradio demo locally, please run the following commands one by one. If you plan to launch multiple model workers to compare between different checkpoints, you only need to launch the controller and the web server *ONCE*.
 
-```mermaid
-flowchart BT
-    %% Declare Nodes
-    gws("Gradio (UI Server)")
-    c("Controller (API Server):<br/>PORT: 10000")
-    mw7b("Model Worker:<br/>llava-v1.5-7b<br/>PORT: 40000")
-    mw13b("Model Worker:<br/>llava-v1.5-13b<br/>PORT: 40001")
+To run our demo, you have four steps.
 
-    %% Declare Styles
-    classDef data fill:#3af,stroke:#48a,stroke-width:2px,color:#444
-    classDef success fill:#8f8,stroke:#0a0,stroke-width:2px,color:#444
-    classDef failure fill:#f88,stroke:#f00,stroke-width:2px,color:#444
+1. [Launch a controller](#1-Launch-a-controller): enable to control different works.
+2. [Launch a model worker](#2-Launch-a-model-worker): core llava-plus model.
+3. [Launch tool workers](#3-Launch-tool-workers): the tools you want to call.
+4. [Launch a gradio web server](#4-Launch-a-gradio-web-server): a front end page for users.
 
-    %% Assign Styles
-    class id,od data;
-    class cimg,cs_s,scsim_s success;
-    class ncimg,cs_f,scsim_f failure;
-
-    subgraph Demo Connections
-        direction BT
-        c<-->gws
-        
-        mw7b<-->c
-        mw13b<-->c
-    end
-```
-
-#### Launch a controller
+#### 1. Launch a controller
 ```Shell
 python -m llava.serve.controller --host 0.0.0.0 --port 20001
 ```
 
-#### Launch a gradio web server.
-```Shell
-python -m llava.serve.gradio_web_server_llava_plus --controller http://localhost:20001 --model-list-mode reload
-```
-You just launched the Gradio web interface. Now, you can open the web interface with the URL printed on the screen. You may notice that there is no model in the model list. Do not worry, as we have not launched any model worker yet. It will be automatically updated when you launch a model worker.
 
-#### Launch a model worker
+
+#### 2. Launch a model worker
 
 This is the actual *worker* that performs the inference on the GPU.  Each worker is responsible for a single model specified in `--model-path`.
 
 ```Shell
 python -m llava.serve.model_worker --host 0.0.0.0 --controller http://localhost:20001 --port 40000 --worker http://localhost:40000 --model-path <huggingface or local path>
 ```
+
 Wait until the process finishes loading the model and you see "Uvicorn running on ...".  Now, refresh your Gradio web UI, and you will see the model you just launched in the model list.
 
+If you are using an Apple device with an M1 or M2 chip, you can specify the mps device by using the `--device` flag: `--device mps`.
+
+<details>
+<summary>Multiple works</summary>
 You can launch as many workers as you want, and compare between different model checkpoints in the same Gradio interface. Please keep the `--controller` the same, and modify the `--port` and `--worker` to a different port number for each worker.
 ```Shell
 python -m llava.serve.model_worker --host 0.0.0.0 --controller http://localhost:20001 --port <different from 40000, say 40001> --worker http://localhost:<change accordingly, i.e. 40001> --model-path <ckpt2>
 ```
+</details>
 
-If you are using an Apple device with an M1 or M2 chip, you can specify the mps device by using the `--device` flag: `--device mps`.
 
-#### Launch a model worker (Multiple GPUs, when GPU VRAM <= 24GB)
+<details>
+<summary>Launch a model worker (Multiple GPUs, when GPU VRAM <= 24GB)</summary>
 
 If the VRAM of your GPU is less than 24GB (e.g., RTX 3090, RTX 4090, etc.), you may try running it with multiple GPUs. Our latest code base will automatically try to use multiple GPUs if you have more than one GPU. You can specify which GPUs to use with `CUDA_VISIBLE_DEVICES`. Below is an example of running with the first two GPUs.
 
 ```Shell
 CUDA_VISIBLE_DEVICES=0,1 python -m llava.serve.model_worker --host 0.0.0.0 --controller http://localhost:20001 --port 40000 --worker http://localhost:40000 --model-path <huggingface or local path>
 ```
+</details>
+
+#### 3. Launch tool workers
+You need to open different tool works, as shown in the figure above, that means you need to prepare codes from other projects.
+
+We provide a detailed [guideline](docs/llava-plus/tools.md) for different projects.
+
+
+#### 4. Launch a gradio web server.
+```Shell
+python -m llava.serve.gradio_web_server_llava_plus --controller http://localhost:20001 --model-list-mode reload
+```
+You just launched the Gradio web interface. Now, you can open the web interface with the URL printed on the screen. 
+
+
 
 ## Train
 
-**Our model is finetuned based on the first stage LLaVA models.**
 
-LLaVA training consists of two stages: (1) feature alignment stage: use our 558K subset of the LAION-CC-SBU dataset to connect a *frozen pretrained* vision encoder to a *frozen LLM*; (2) visual instruction tuning stage: use 150K GPT-generated multimodal instruction-following data, plus around 515K VQA data from academic-oriented tasks, to teach the model to follow multimodal instructions.
 
+LLaVA training consists of two stages: (1) feature alignment stage, and  (2) visual instruction tuning stage.
+
+Our llava-plus is trianed from the llava-stage-1-pre-trained projectors.
+
+<details>
+<summary>Training cost</summary>
 LLaVA-Plus is trained on 4/8 A100 GPUs with 80GB memory. To train on fewer GPUs, you can reduce the `per_device_train_batch_size` and increase the `gradient_accumulation_steps` accordingly. Always keep the global batch size the same: `per_device_train_batch_size` x `gradient_accumulation_steps` x `num_gpus`.
+</details>
 
-### Download Vicuna checkpoints (automatically)
+
+<details>
+<summary>Download Vicuna checkpoints (automatically)</summary>
 
 Our base model Vicuna v1.5, which is an instruction-tuned chatbot, will be downloaded automatically when you run our provided training scripts. No action is needed.
+</details>
 
+### Stage 1: Pretrain (feature alignment)
 
-### Stage 1: Pretrain (feature alignment, we use the LLaVA checkpoint directly)
+Training the projector following the [guide](https://github.com/haotian-liu/LLaVA/tree/main#pretrain-feature-alignment)
 
-See the [LLaVA Pre-training](https://github.com/haotian-liu/LLaVA/tree/main#pretrain-feature-alignment) for the first stage training(feature alignment).
+or 
+
+Download [pre-trained projector](https://github.com/haotian-liu/LLaVA/blob/main/docs/MODEL_ZOO.md#projector-weights) directly.
 
 
 ### Stage 2: Tool Augmented Visual Instruction Tuning
@@ -155,29 +162,31 @@ Please download [the training data](https://huggingface.co/datasets/LLaVA-VL/lla
 - [infoseek](https://open-vision-language.github.io/infoseek/)
 - [hiertext](https://github.com/google-research-datasets/hiertext)
 
-Our scripts support multi-source data and image folders. Seperate each item with `,`.
-
 2. Start training!
 
-You may download LLaVA pretrained projectors in [Model Zoo](https://github.com/haotian-liu/LLaVA/blob/main/docs/MODEL_ZOO.md). 
+Training script with DeepSpeed ZeRO-2: [`training_llava_plus_v0_7b.sh`](scripts/llava_plus/training_llava_plus_v0_7b.sh) or [`training_llava_plus_v1.3_7b.sh`](scripts/llava_plus/training_llava_plus_v1.3_7b.sh)
 
-Visual instruction tuning takes around 25 hours for LLaVA-Plus-7B on 4x A100 (80G), due to the increased resolution to 336px. It takes around 30 hours for LLaVA-Plus-13B-LLaVA-1.5 on 8x A100 (80G).
 
-Training script with DeepSpeed ZeRO-2: [`training.sh`](scripts/llava_plus/training.sh).
 
-If you are do not have enough GPU memory:
+<details>
+<summary>If you are do not have enough GPU memory:</summary>
 
 - Use LoRA. See LLaVA repo for more details.
 - Replace `zero3.json` with `zero3_offload.json` which offloads some parameters to CPU RAM. This slows down the training speed.
 
 If you are interested in finetuning LLaVA(LLaVA-Plus) model to your own task/data, please check out [`Finetune_Custom_Data.md`](https://github.com/haotian-liu/LLaVA/blob/main/docs/Finetune_Custom_Data.md)。
+</details>
 
-New options to note:
+<details>
+<summary>Some examplanations of options:</summary>
 
+- `--data_path path/to/llava-150k-tool-aug.json,path/to/llava-plus-v1-117k-tool-merge.json`: You may pass multiple data files with `,` seperated.
+- `--image_folder /path/to/coco/train2017/,/path/to/hiertext/train,/path/to/infoseek/infoseek_images,/path/to/instruct-pix2pix/clip-filtered-dataset,/path/to/goldg/vg_mdetr/images`: You may pass multiple image folders with `,` seperated. Note that it may cause problems if multiple folders have images with the same name.
 - `--mm_projector_type mlp2x_gelu`: the two-layer MLP vision-language connector.
 - `--vision_tower openai/clip-vit-large-patch14-336`: CLIP ViT-L/14 336px.
 - `--image_aspect_ratio pad`: this pads the non-square images to square, instead of cropping them; it slightly reduces hallucination.
 - `--group_by_modality_length True`: this should only be used when your instruction tuning dataset contains both language (e.g. ShareGPT) and multimodal (e.g. LLaVA-Instruct). It makes the training sampler only sample a single modality (either image or language) during training, which we observe to speed up training by ~25%, and does not affect the final outcome.
+</details>
 
 ## Evaluation
 
