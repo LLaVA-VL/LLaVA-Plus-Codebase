@@ -1,0 +1,22 @@
+[
+    {
+        "image_id": 569536,
+        "image_file_name": "COCO_train2014_000000569536.jpg",
+        "captions": "a young girl standing by luggage in an airport\nA young girl pushes a suitcase at the airport.\nLittle girl pushing a luggage trolley in public space.\nA little girl pushes a pink suitcase across the floor.\na kid pushing a cart in an airport full of luggage",
+        "objects": "suitcase: [0.03, 0.7, 0.59, 0.99]\nperson: [0.36, 0.39, 0.66, 0.96]",
+        "question": "Can you detect the girl and the cart in the image?",
+        "grounding_dino_input": "girl . cart",
+        "grounding_dino_output": "{'boxes': [[0.35, 0.37, 0.66, 0.97], [0.0, 0.57, 0.69, 1.0]], 'logits': [0.51, 0.37], 'phrases': ['girl', 'cart']}",
+        "answer": "Sure! I detect one little girl and a cart in the image. \n- a little girl is located within the bounding box coordinates [0.35, 0.37, 0.66, 0.97]\n- a cart is located within the bounding box coordinates [0.0, 0.57, 0.69, 1.0]\nThe little girl is using the cart as a means to move luggage. This is a familiar scene at airports where travelers commonly use carts to assist with their baggage. Whether she's just landed or is embarking on a journey, this image embodies a sense of activity and the anticipation that comes with travel."
+    },
+    {
+        "image_id": 299854,
+        "image_file_name": "COCO_train2014_000000299854.jpg",
+        "captions": "A small cat is curled up, sleeping inside of a baseball cap.\na cat sits curled up and sleeping inside of a hat\nA cat that is laying in a hat.\nA kitten curled up asleep in a baseball cap\nA cat is sleeping inside a baseball hat.",
+        "objects": "cat: [0.35, 0.24, 0.83, 0.72]\nbed: [0.0, 0.29, 1.0, 0.99]",
+        "question": "Can you detect the cat in the image and tell me what it's doing?",
+        "grounding_dino_input": "cat",
+        "grounding_dino_output": "{'boxes': [[0.35, 0.22, 0.83, 0.72]], 'logits': [0.9], 'phrases': ['cat']}",
+        "answer": "Sure! There is one 'cat' object detected with bounding box coordinates of [0.35, 0.22, 0.83, 0.72]. The cat appears to be a small kitten with white and black markings. This kitten is comfortably nestled and taking a nap inside a baseball cap. The cap seems to provide a cozy and snug spot for the little feline to rest."
+    }
+]
