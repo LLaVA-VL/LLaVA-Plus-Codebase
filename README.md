@@ -3,9 +3,9 @@
 
 **Learning to Use Tools For Creating Multimodal Agents.**
 
-[[Project Page](https://llava-vl.github.io/llava-plus)] [[Arxiv](https://arxiv.org/abs/2311.05437)]  [[Demo](https://llavaplus.ngrok.io/)]  [[Data](https://huggingface.co/datasets/LLaVA-VL/llava-plus-data)] [[Model Zoo]()] 
+[[Project Page](https://llava-vl.github.io/llava-plus)] [[Arxiv](https://arxiv.org/abs/2311.05437)]  [[Demo](https://llavaplus.ngrok.io/)]  [[Data](https://huggingface.co/datasets/LLaVA-VL/llava-plus-data)] [[Model Zoo](https://github.com/LLaVA-VL/LLaVA-Plus-Codebase/blob/main/docs/llava-plus/modelzoo.md)] 
 
-**Note: Some parts of the code are still under preparations. Keep Tuned!**
+**Note: Some sections of the code are currently being prepared and updated. Please stay tuned.**
 
 
 ## Release
@@ -14,13 +14,13 @@
 
 [![Code License](https://img.shields.io/badge/Code%20License-Apache_2.0-green.svg)](https://github.com/tatsu-lab/stanford_alpaca/blob/main/LICENSE)
 [![Data License](https://img.shields.io/badge/Data%20License-CC%20By%20NC%204.0-red.svg)](https://github.com/tatsu-lab/stanford_alpaca/blob/main/DATA_LICENSE)
-**Usage and License Notices**: The data and checkpoint is intended and licensed for research use only. They are also restricted to uses that follow the license agreement of LLaVA, LLaMA, Vicuna and GPT-4. The dataset is CC BY NC 4.0 (allowing only non-commercial use) and models trained using the dataset should not be used outside of research purposes.
+**Usage and License Notices**: The data and checkpoint are intended and licensed for research use only. They are also restricted to uses that follow the license agreement of LLaVA, LLaMA, Vicuna, and GPT-4. The dataset is CC BY NC 4.0 (allowing only non-commercial use) and models trained using the dataset should not be used outside of research purposes.
 
 
 ## Contents
 - [Install](#install)
 - [LLaVA-Plus Weights](#llava-plus-weights)
-- [Demo](#Demo)
+- [Demo](#demo)
 - [Model Zoo](docs/llava-plus/modelzoo.md)
 - [Dataset](docs/llava-plus/dataset.md)
 - [Train](#train)
@@ -30,7 +30,7 @@
 
 If you are not using Linux, do *NOT* proceed, see instructions for [macOS](https://github.com/haotian-liu/LLaVA/blob/main/docs/macOS.md) and [Windows](https://github.com/haotian-liu/LLaVA/blob/main/docs/Windows.md) from LLaVA.
 
-1. Clone this repository and navigate to LLaVA-Plus folder
+1. Clone this repository and navigate to the LLaVA-Plus folder
 ```bash
 git clone https://github.com/LLaVA-VL/LLaVA-Plus-Codebase LLaVA-Plus
 cd LLaVA-Plus
@@ -54,9 +54,11 @@ pip install flash-attn --no-build-isolation
 
 **We are still preparing the part. Stay tuned!**
 
-Please check out our [Model Zoo](https://github.com/haotian-liu/LLaVA/blob/main/docs/MODEL_ZOO.md) for all public LLaVA-Plus checkpoints, and the instructions of how to use the weights.
+Please check out our [Model Zoo](https://github.com/LLaVA-VL/LLaVA-Plus-Codebase/blob/main/docs/llava-plus/modelzoo.md) for all public LLaVA-Plus checkpoints, and the instructions on how to use the weights.
 
 ## Demo
+
+- [Demo: https://llavaplus.ngrok.io/](https://llavaplus.ngrok.io/)
 
 ### Demo Architecture
 
@@ -107,7 +109,7 @@ CUDA_VISIBLE_DEVICES=0,1 python -m llava.serve.model_worker --host 0.0.0.0 --con
 </details>
 
 #### 3. Launch tool workers
-You need to open different tool works, as shown in the figure above, that means you need to prepare codes from other projects.
+You need to open different tool works, as shown in the figure above, which means you need to prepare codes from other projects.
 
 We provide a detailed [guideline](docs/llava-plus/tools.md) for different projects.
 
@@ -126,7 +128,7 @@ You just launched the Gradio web interface. Now, you can open the web interface 
 
 LLaVA training consists of two stages: (1) feature alignment stage, and  (2) visual instruction tuning stage.
 
-Our llava-plus is trianed from the llava-stage-1-pre-trained projectors.
+Our llava-plus is trained from the llava-stage-1-pre-trained projectors.
 
 <details>
 <summary>Training cost</summary>
@@ -166,7 +168,7 @@ Training script with DeepSpeed ZeRO-2: [`training_llava_plus_v0_7b.sh`](scripts/
 
 
 <details>
-<summary>If you are do not have enough GPU memory:</summary>
+<summary>If you do not have enough GPU memory:</summary>
 - Use LoRA. See LLaVA repo for more details.
 - Replace `zero2.json` with `zero3.json` or `zero3_offload.json`.
 </details>
@@ -176,10 +178,10 @@ Training script with DeepSpeed ZeRO-2: [`training_llava_plus_v0_7b.sh`](scripts/
 please check out [`Finetune_Custom_Data.md`](https://github.com/haotian-liu/LLaVA/blob/main/docs/Finetune_Custom_Data.md)。
 </details>
 <details>
-<summary>Some examplanations of options:</summary>
+<summary>Some explainations of options:</summary>
 
-- `--data_path path/to/llava-150k-tool-aug.json,path/to/llava-plus-v1-117k-tool-merge.json`: You may pass multiple data files with `,` seperated.
-- `--image_folder /path/to/coco/train2017/,/path/to/hiertext/train,/path/to/infoseek/infoseek_images,/path/to/instruct-pix2pix/clip-filtered-dataset,/path/to/goldg/vg_mdetr/images`: You may pass multiple image folders with `,` seperated. Note that it may cause problems if multiple folders have images with the same name.
+- `--data_path path/to/llava-150k-tool-aug.json,path/to/llava-plus-v1-117k-tool-merge.json`: You may pass multiple data files with `,` separated.
+- `--image_folder /path/to/coco/train2017/,/path/to/hiertext/train,/path/to/infoseek/infoseek_images,/path/to/instruct-pix2pix/clip-filtered-dataset,/path/to/goldg/vg_mdetr/images`: You may pass multiple image folders with `,` separated. Note that it may cause problems if multiple folders have images with the same name.
 - `--mm_projector_type mlp2x_gelu`: the two-layer MLP vision-language connector.
 - `--vision_tower openai/clip-vit-large-patch14-336`: CLIP ViT-L/14 336px.
 - `--image_aspect_ratio pad`: this pads the non-square images to square, instead of cropping them; it slightly reduces hallucination.
@@ -195,18 +197,18 @@ See [LLaVA's Instruction](https://github.com/haotian-liu/LLaVA/tree/main#evaluat
 If you find LLaVA useful for your research and applications, please cite using this BibTeX:
 ```bibtex
 
-@misc{liu2023llavaplus,
-    title={LLaVA-Plus: Learning to Use Tools for Creating Multimodal Agents},
-    author={Shilong Liu and Hao Cheng and Haotian Liu and Hao Zhang and Feng Li and Tianhe Ren and Xueyan Zou and Jianwei Yang and Hang Su and Jun Zhu and Lei Zhang and Jianfeng Gao and Chunyuan Li},
-    year={2023},
-    booktitle={arXiv}
+@article{liu2023llavaplus,
+  title={LLaVA-Plus: Learning to Use Tools for Creating Multimodal Agents},
+  author={Liu, Shilong and Cheng, Hao and Liu, Haotian and Zhang, Hao and Li, Feng and Ren, Tianhe and Zou, Xueyan and Yang, Jianwei and Su, Hang and Zhu, Jun and Zhang, Lei and Gao, Jianfeng and Li, Chunyuan},
+  journal={arXiv:2311.05437},
+  year={2023}
 }
 
 @misc{liu2023llava,
       title={Visual Instruction Tuning}, 
       author={Liu, Haotian and Li, Chunyuan and Wu, Qingyang and Lee, Yong Jae},
       publisher={arXiv:2304.08485},
-      year={2023},
+      year={2023}
 }
 ```
 
