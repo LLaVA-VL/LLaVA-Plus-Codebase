@@ -178,7 +178,7 @@ Training script with DeepSpeed ZeRO-2: [`training_llava_plus_v0_7b.sh`](scripts/
 please check out [`Finetune_Custom_Data.md`](https://github.com/haotian-liu/LLaVA/blob/main/docs/Finetune_Custom_Data.md)。
 </details>
 <details>
-<summary>Some explainations of options:</summary>
+<summary>Some explanations of options:</summary>
 
 - `--data_path path/to/llava-150k-tool-aug.json,path/to/llava-plus-v1-117k-tool-merge.json`: You may pass multiple data files with `,` separated.
 - `--image_folder /path/to/coco/train2017/,/path/to/hiertext/train,/path/to/infoseek/infoseek_images,/path/to/instruct-pix2pix/clip-filtered-dataset,/path/to/goldg/vg_mdetr/images`: You may pass multiple image folders with `,` separated. Note that it may cause problems if multiple folders have images with the same name.
