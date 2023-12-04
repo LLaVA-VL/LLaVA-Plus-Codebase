@@ -223,7 +223,7 @@ If you find LLaVA useful for your research and applications, please cite using t
 Included Tools
 - [Grounding DINO](https://github.com/IDEA-Research/GroundingDINO)
 - [Grounded-Segment-Anything](https://github.com/IDEA-Research/Grounded-Segment-Anything)
-- [Recognize Anythging](https://github.com/xinyu1205/recognize-anything)
+- [Recognize Anything](https://github.com/xinyu1205/recognize-anything)
 - [Segment-Anything](https://github.com/facebookresearch/segment-anything).
 - [SEEM: Segment Everything Everywhere All at Once](https://github.com/UX-Decoder/Segment-Everything-Everywhere-All-At-Once)
 - [Semantic-SAM](https://github.com/UX-Decoder/Semantic-SAM)
